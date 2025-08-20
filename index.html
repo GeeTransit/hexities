@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>hexities</title>
+  </head>
+
+  <body>
+    <form id="chat" action="javascript:void 0">
+      <label for="input">message:</label>
+      <input id="input"></input>
+      <button type="submit">send</button>
+    </form>
+    <ul id="messages"></ul>
+
+    <script>
+      const backendUrl = prompt("Server WebSocket URL");
+      const defaultUrl = window.location.protocol + "//" + window.location.host + "/ws";
+      const socket = new WebSocket(backendUrl || defaultUrl);
+      const $ = document.getElementById.bind(document);
+      $("chat").addEventListener("submit", () => {
+        socket.send($("input").value);
+      });
+      socket.addEventListener("message", event => {
+        var el = document.createElement("li");
+        el.textContent = event.data;
+        $("messages").append(el);
+      });
+    </script>
+  </body>
+</html>
