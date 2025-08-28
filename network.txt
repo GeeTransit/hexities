@@ -1,0 +1,71 @@
+c login
+    str preferred name
+
+s reject
+    str reason
+close
+OR
+# each lobby has a host
+s lobby *
+    str name
+    dict game properties
+        int player count=4
+        bool open-lobby=true
+        bool open-spectators=true
+        bool allow counteroffers=true  # offers by players when not their turn
+        bool randomize-order=true
+    dict user properties *
+        str name
+        # bool ready
+s sync complete
+    str user name
+
+c create lobby
+    str lobby name
+    dict game properties  # if create, from earlier
+c join lobby
+    str lobby name
+c leave lobby
+# c ready game  # users should come to a consensus for when to start a game
+    # # send properties to prevent race conditions where they accept unwanted properties
+    # dict game properties
+    # dict lobby user properties  # should only differ by ready state
+# c remove ready game
+c send chat
+    str message
+s chat
+    str user name
+    str message
+c change properties
+    # only host can change
+    # same
+
+# delay 5 seconds before an all-ready lobby starts
+s game
+    # for labelling see https://www.redblobgames.com/grids/parts/
+    hexes
+    edges  # roads
+    nodes  # settlements
+    dict resources
+        str -> int
+    dict user properties *  # order is randomized
+        dict resources  # key is unknown for other users
+            str -> int
+        dict dev cards
+            str -> int
+        dict victory points  # key is dev card for the hidden victory points
+            str -> int
+
+1 init forward settlement
+2 init forward road
+1 init backward settlement  # remember to give resources
+2 init backward road
+1 roll
+  - 1 move robber
+    2 select robbed
+2 any
+  - 1 move robber
+    2 select robbed
+  - discard
+  - road building
+end game

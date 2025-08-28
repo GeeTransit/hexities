@@ -1,0 +1,30 @@
+current board
+current player
+current action?
+    e.g when u play a knight, u first play the dev card (1st action), then u move the robber (2nd action). after the 1st action, the current action stores the fact that ur next action must be to place the robber
+
+player actions:
+put settlement(node)
+    all adjacent nodes != settlements
+    any adjacent edge == own road
+    own resources -= settlement resources
+    node empty -> own settlement
+put road(edge)
+    any adjacent node
+        node empty or own settlement
+        any adjacent edge == own road
+    own resources -= road resources
+    edge empty -> own road
+roll die
+propose trade(give, take)
+    own resources >= give
+play knight(tile)
+    tile empty -> knight
+    own dev cards -= knight card
+play monopoly(resource)
+play
+settlement -> city
+end turn
+
+game actions:
+next player
