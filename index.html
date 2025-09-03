@@ -27,6 +27,11 @@
         el.textContent = event.data;
         $("messages").append(el);
       });
+      socket.addEventListener("close", () => {
+        var el = document.createElement("li");
+        el.textContent = "error: connection closed";
+        $("messages").append(el);
+      });
     </script>
   </body>
 </html>
