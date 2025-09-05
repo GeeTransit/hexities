@@ -98,49 +98,67 @@ events_updated = anyio.Condition()
 async def send(ws, event):
     await ws.send_text(json.dumps(event, separators=",:"))
 
+class HandlerError(ValueError):
+    def __init__(self, event):
+        self.event = event
+
+async def handle_event(event, session, tg, ws):
+    if session.setdefault("state", "login") == "login":
+        if event["type"] == "login":
+            if "username" not in event:
+                raise HandlerError({"type": "login_deny", "reason": "username missing"})
+            username = event["username"]
+            if username in sessions:
+                raise HandlerError({"type": "login_deny", "reason": "given username in use"})
+            i = 0
+            state = None
+            while i < len(events):
+                for personalized_event in make_personalized_events(username, events[i]):
+                    personalized_event = personalized_event.copy()
+                    state = personalized_event.pop("state", state)
+                    await send(ws, personalized_event)
+                i += 1
+            event_index = i
+            assert state is not None, "should have state"
+            await send(ws, {"type": "game_state", "state": state})
+            await send(ws, {"type": "login_accept", "username": username})
+            print("yay:", username)
+            session["state"] = "game"
+            session["username"] = username
+            session["outgoing_obj"] = outgoing_obj = object()
+            sessions[username] = session
+            async def _handle_outgoing_events(i, outgoing_obj):
+                while True:
+                    while i >= len(events):
+                        async with events_updated:
+                            await events_updated.wait()
+                        if session.get("outgoing_obj") is not outgoing_obj:
+                            return
+                    for personalized_event in make_personalized_events(username, events[i]):
+                        await send(ws, personalized_event)
+                    i += 1
+            tg.start_soon(_handle_outgoing_events, event_index, outgoing_obj)
+            return
+    if session["state"] == "game":
+        if event["type"] == "logout":
+            del sessions[session["username"]]
+            session.clear()
+            await send(ws, {"type": "logout_accept"})
+            return
+        if event.setdefault("username", session["username"]) != session["username"]:
+            raise RuntimeError("username must match own username")
+        new_event = check_valid_and_apply_event(event, events[-1]["state"])
+        events.append(new_event)
+        async with events_updated:
+            events_updated.notify_all()
+        return
+    raise HandlerError({"type": "debug", "reason": "unknown event"})
+
 @app.websocket("/ws")
 async def ws_endpoint(ws: fastapi.WebSocket):
     await ws.accept()
-    username = None
+    session = {}
     try:
-        # receive login info (username)
-        msg = await ws.receive_text()
-        print(ascii([msg]))
-        try:
-            event = json.loads(msg)
-        except json.JSONDecodeError:
-            await send(ws, {"type": "debug", "reason": "expected JSON object"})
-            return
-        if event.get("type") != "login":
-            await send(ws, {"type": "debug", "reason": "expected login type event"})
-            return
-        if "username" not in event:
-            await send(ws, {"type": "login_deny", "reason": "username missing"})
-            return
-        username = event["username"]
-        if username in sessions:
-            await send(ws, {"type": "login_deny", "reason": "given username in use"})
-            return
-        i = 0
-        state = None
-        while i < len(events):
-            for personalized_event in make_personalized_events(username, events[i]):
-                personalized_event = personalized_event.copy()
-                state = personalized_event.pop("state", state)
-                await send(ws, personalized_event)
-            i += 1
-        event_index = i
-        assert state is not None, "should have state"
-        await send(ws, {"type": "game_state", "state": state})
-        await send(ws, {"type": "login_accept", "username": username})
-        print("yay:", username)
-        sessions[username] = ws
-        # events.append(check_valid_and_apply_event({
-            # "type": "join",
-            # "username": username,
-        # }, events[-1]["state"], internal=True))
-        # async with events_updated:
-            # events_updated.notify_all()
         async with anyio.create_task_group() as tg:
             @tg.start_soon
             async def _handle_incoming_events():
@@ -152,41 +170,21 @@ async def ws_endpoint(ws: fastapi.WebSocket):
                         return
                     try:
                         event = json.loads(msg)
-                    except json.JSONDecodeError as e:
-                        await send(ws, {"type": "debug", "reason": "invalid json"})
+                        await handle_event(event, session=session, tg=tg, ws=ws)
+                    except HandlerError as e:
                         print(ascii([e, msg]))
+                        await send(ws, e.event)
                         continue
-                    # check if event valid
-                    try:
-                        assert event.setdefault("username", username) == username
-                        new_event = check_valid_and_apply_event(event, events[-1]["state"])
                     except Exception as e:
-                        print(ascii([username, e]))
-                        await send(ws, {"type": "debug", "reason": "invalid event"})
+                        print(ascii([msg]))
+                        import traceback; traceback.print_exc()
+                        await send(ws, {"type": "debug", "reason": "invalid event", "_pyerror": repr(e)})
                         continue
-                    # add to events list and notify all
-                    events.append(new_event)
-                    async with events_updated:
-                        events_updated.notify_all()
-            @tg.start_soon
-            async def _handle_outgoing_events():
-                i = event_index
-                while True:
-                    while i >= len(events):
-                        async with events_updated:
-                            await events_updated.wait()
-                    for personalized_event in make_personalized_events(username, events[i]):
-                        await send(ws, personalized_event)
-                    i += 1
     finally:
-        if sessions.get(username) == ws:
+        username = session.get("username")
+        if sessions.get(username) is session:
             del sessions[username]
-            # events.append(check_valid_and_apply_event({
-                # "type": "leave",
-                # "username": username,
-            # }, events[-1]["state"], internal=True))
-            # async with events_updated:
-                # events_updated.notify_all()
+            session.clear()
         try:
             await ws.close()
         except RuntimeError:  # happens if the websocket is already closed

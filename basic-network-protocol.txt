@@ -6,4 +6,4 @@ websocat ws://localhost:8000/ws
 {"type": "end_turn"}
 
 try doing the above steps but with another session logged in as bob
-note how u cant end the turn until alice ends her turn
+note how u cant roll until alice ends her turn
