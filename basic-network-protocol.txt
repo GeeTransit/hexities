@@ -1,9 +1,9 @@
 fastapi run server.py
 
 websocat ws://localhost:8000/ws
-{"type": "login", "username": "alice"}
-{"type": "roll"}
-{"type": "end_turn"}
+login alice
+roll
+end_turn
 
 try doing the above steps but with another session logged in as bob
 note how u cant roll until alice ends her turn

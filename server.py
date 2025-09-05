@@ -98,6 +98,19 @@ events_updated = anyio.Condition()
 async def send(ws, event):
     await ws.send_text(json.dumps(event, separators=",:"))
 
+command_handlers = {
+    "login": lambda username: {"type": "login", "username": username},
+    "roll": lambda: {"type": "roll"},
+    "end_turn": lambda: {"type": "end_turn"},
+    "logout": lambda: {"type": "logout"},
+}
+def parse_incoming(msg: str):
+    if msg.strip().startswith("{"):
+        return json.loads(msg)
+    import shlex
+    name, *args = shlex.split(msg)
+    return command_handlers[name](*args)
+
 class HandlerError(ValueError):
     def __init__(self, event):
         self.event = event
@@ -169,7 +182,7 @@ async def ws_endpoint(ws: fastapi.WebSocket):
                         tg.cancel_scope.cancel()
                         return
                     try:
-                        event = json.loads(msg)
+                        event = parse_incoming(msg)
                         await handle_event(event, session=session, tg=tg, ws=ws)
                     except HandlerError as e:
                         print(ascii([e, msg]))
