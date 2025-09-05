@@ -3,6 +3,7 @@ fastapi run server.py
 websocat ws://localhost:8000/ws
 login alice
 roll
+build_road 2 -1
 end_turn
 
 try doing the above steps but with another session logged in as bob

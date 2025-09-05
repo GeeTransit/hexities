@@ -21,9 +21,28 @@ def make_catan_game():
         "user_order": ["alice", "bob", "carol", "dave"],
         "current_user": "alice",
         "current_stage": "roll",
+        "edges": [],
         # settlements: {username: [[x,y],...], ...}, same with cities, roads
         # robber: [x,y],
     }
+
+def coord_kind(q, r):
+    if q%2 == 0 and r%2 == 0:
+        if (q-r)%6 == 0:
+            return "hex"
+        else:
+            return "node"
+    elif (q-r)%3 == 0:
+        return "edge"
+
+def find(x, y, infos, update=False):
+    for info in infos:
+        if info["x"] == x and info["y"] == y:
+            return info
+    info = {"x": x, "y": y}
+    if update:
+        infos.append(info)
+    return info
 
 def check_valid_event(event, state, internal=False):  # return clean event
     # if event needs randomized outcome, include random outcome
@@ -49,6 +68,15 @@ def check_valid_event(event, state, internal=False):  # return clean event
                 "second": random.randint(1, 6),
             },
         }
+    if event["type"] == "build_road":
+        assert event["username"] == state["current_user"]
+        assert state["current_stage"] == "normal"
+        assert isinstance(event["x"], int)
+        assert isinstance(event["y"], int)
+        assert coord_kind(event["x"], event["y"]) == "edge"
+        info = find(event["x"], event["y"], state["edges"])
+        assert "road" not in info
+        return {"type": "build_road", "username": state["current_user"], "x": event["x"], "y": event["y"]}
     assert False, "unknown event"
 def apply_event(event, state):  # return new state
     # check player correct for player specific events
@@ -74,6 +102,11 @@ def apply_event(event, state):  # return new state
     if event["type"] == "roll":
         # distribute cards
         new_state["current_stage"] = "normal"
+        return new_state
+    if event["type"] == "build_road":
+        info = find(event["x"], event["y"], new_state["edges"], update=True)
+        info["road"] = True
+        info["username"] = event["username"]
         return new_state
     assert False, "unknown event"
     # if event["type"] == "place_settlement":
@@ -103,6 +136,7 @@ command_handlers = {
     "roll": lambda: {"type": "roll"},
     "end_turn": lambda: {"type": "end_turn"},
     "logout": lambda: {"type": "logout"},
+    "build_road": lambda x, y: {"type": "build_road", "x": int(x), "y": int(y)},
 }
 def parse_incoming(msg: str):
     if msg.strip().startswith("{"):
