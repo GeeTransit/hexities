@@ -16,12 +16,22 @@ async def index_endpoint():
 # Set up a simple chat application over WebSockets
 sessions: dict[str, fastapi.WebSocket] = {}
 
-def make_catan_game():
+def make_catan_game(event):
+    nodes = set()
+    edges = set()
+    for info in event["tiles"]:
+        x, y = info["x"], info["y"]
+        for dx, dy in neighbours1:
+            nodes.add((x + 2*dx, y + 2*dy))
+        for dx, dy in neighbours2:
+            edges.add((x + dx, y + dy))
     return {
         "user_order": ["alice", "bob", "carol", "dave"],
         "current_user": "alice",
         "current_stage": "roll",
-        "edges": [],
+        "nodes": [{"x": x, "y": y} for x, y in nodes],
+        "edges": [{"x": x, "y": y} for x, y in edges],
+        "tiles": [info for info in event["tiles"]],
         # settlements: {username: [[x,y],...], ...}, same with cities, roads
         # robber: [x,y],
     }
@@ -34,23 +44,80 @@ def coord_kind(q, r):
             return "node"
     elif (q-r)%3 == 0:
         return "edge"
+neighbours1 = [(0, 1), (0, -1), (-1, 0), (1, 0), (1, -1), (-1, 1)]
+neighbours2 = [(2, -1), (-2, 1), (-1, 2), (1, -2), (-1, -1), (1, 1)]
 
 def find(x, y, infos, update=False):
     for info in infos:
         if info["x"] == x and info["y"] == y:
             return info
-    info = {"x": x, "y": y}
-    if update:
-        infos.append(info)
-    return info
+    raise LookupError(f'cannot find {x!r}, {y!r}')
 
 def check_valid_event(event, state, internal=False):  # return clean event
     # if event needs randomized outcome, include random outcome
     if internal and event["type"] == "init":
         assert not state
+        Q = V = {(0, 0)}
+        for _ in range(2):
+            nQ = set()
+            for x, y in list(Q):
+                for dx, dy in neighbours2:
+                    coord = (x + 2*dx, y + 2*dy)
+                    if coord not in V:
+                        V.add(coord)
+                        nQ.add(coord)
+            Q = nQ
+        assert len(V) == 3+4+5+4+3
+        resources = ["brick"]*3 + ["ore"]*3 + ["sheep"]*4 + ["wheat"]*4 + ["wood"]*4 + ["desert"]
+        assert len(resources) == len(V)
+        random.shuffle(resources)
+        placed = {}
+        numbers = [2, 12] + [3, 4, 5, 6, 8, 9, 10, 11]*2
+        assert len(numbers) == len(V)-1  # skip desert
+        random.shuffle(numbers)
+        order = list(V)
+        random.shuffle(order)
+        i = 0
+        for number in numbers:
+            # get next tile to place
+            while resources[i] == "desert" or order[i] in placed:
+                i += 1
+            x, y = order[i]
+            # place non-red numbers immediately
+            if number not in (6, 8):
+                placed[x, y] = number
+            else:
+                # if red number (6 or 8), try positions that don't touching other red numbers
+                for j in range(i, len(order)):
+                    if resources[j] == "desert": continue
+                    x, y = order[j]
+                    if all(
+                        placed.get((x + 2*dx, y + 2*dy)) not in (6, 8)
+                        for dx, dy in neighbours2
+                    ):
+                        placed[x, y] = number
+                        break
+                else:
+                    # if not possible, go backward, swapping when a position is found
+                    for j in reversed(range(i)):
+                        if resources[j] == "desert": continue
+                        x, y = order[j]
+                        if placed[x, y] not in (6, 8) and all(
+                            placed.get((x + 2*dx, y + 2*dy)) not in (6, 8)
+                            for dx, dy in neighbours2
+                        ):
+                            prev_number = placed[x, y]
+                            placed[x, y] = number
+                            placed[order[i]] = prev_number
+                            break
+                    else:
+                        assert False
         return {
             "type": "init",
-            # "tiles": [{"y":y,"x":x,"resource":"lumber/desert","number":n/null}]
+            "tiles": [
+                {"x": x, "y": y, "resource": resource, **({"number": placed[x, y]} if (x, y) in placed else {})}
+                for (x, y), resource in zip(order, resources)
+            ]
             # "ports": [{"y":y,"x":x,"type":"lumber/any"}]
         }
     if event["type"] == "end_turn":
@@ -84,7 +151,7 @@ def apply_event(event, state):  # return new state
     # update game state and recalculate stuff if necessary (ie longest road)
     new_state = copy.deepcopy(state)
     if event["type"] == "init":
-        return make_catan_game()
+        return make_catan_game(event)
         # {
             # "board": {
                 # y: {
