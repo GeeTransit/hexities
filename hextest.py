@@ -1,6 +1,33 @@
 # q is the top left to bottom right x axis, r is the y axis
 # some spots are hexes, some are edges, some are nodes, some are meaningless
 # 0, 0 is the central hex
+#   q: -4    -3    -2    -1     0     1     2     3     4
+# r:            -2          -3          -4          -5
+#  -1  edge   .   (HEX)   .    edge   .   (HEX)   .    edge
+#       .  \  .     .  \  .     .  \  .     .  \  .     .
+#       .     +     .     +     .     +     .     +     .
+#       .     .  \  .     .  \  .     .  \  .     .  \  .
+#   0  Node   .     +     .    Node   .     +     .    Node
+#       .  \  .     .  \  .     .  \  .     .  \  .     .
+#       .    edge   .    edge   .    edge   .    edge   .
+#       .     .  \  .     .  \  .     .  \  .     .  \  .
+#   1   +     .    Node   .     +     .    Node   .     +
+#       .  \  .     .  \  .     .  \  .     .  \  .     .
+#       .     +     .     +     .     +     .     +     .
+#       .     .  \  .     .  \  .     .  \  .     .  \  .
+#   2 (HEX)   .    edge   .   (HEX)   .    edge   .   (HEX)
+#       .  \  .     .  \  .     .  \  .     .  \  .     .
+#       .     +     .     +     .     +     .     +     .
+#       .     .  \  .     .  \  .     .  \  .     .  \  .
+#   3   +     .    Node   .     +     .    Node   .     +
+#       .  \  .     .  \  .     .  \  .     .  \  .     .
+#       .    edge   .    edge   .    edge   .    edge   .
+#       .     .  \  .     .  \  .     .  \  .     .  \  .
+#   4  Node   .     +     .    Node   .     +     .    Node
+#       .  \  .     .  \  .     .  \  .     .  \  .     .
+#       .     +     .     +     .     +     .     +     .
+#       .     .  \  .     .  \  .     .  \  .     .  \  .
+#   5  edge   .   (HEX)   .    edge   .   (HEX)   .    edge
 def kind(q, r):
     if q%2 == 0 and r%2 == 0:
         if (q-r)%6 == 0:
