@@ -25,9 +25,10 @@ def make_catan_game(event):
             nodes.add((x + 2*dx, y + 2*dy))
         for dx, dy in neighbours2:
             edges.add((x + dx, y + dy))
+    usernames = ["alice", "bob", "carol", "dave"]
     return {
-        "user_order": ["alice", "bob", "carol", "dave"],
-        "current_user": "alice",
+        "user_order": usernames,
+        "current_user": usernames[0],
         "current_stage": "roll",
         "nodes": [{"x": x, "y": y} for x, y in nodes],
         "edges": [{"x": x, "y": y} for x, y in edges],
