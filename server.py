@@ -33,6 +33,7 @@ def make_catan_game(event):
         "nodes": [{"x": x, "y": y} for x, y in nodes],
         "edges": [{"x": x, "y": y} for x, y in edges],
         "tiles": [info for info in event["tiles"]],
+        "hands": [{"username": username, "resources": {}} for username in usernames],
         # settlements: {username: [[x,y],...], ...}, same with cities, roads
         # robber: [x,y],
     }
@@ -148,6 +149,15 @@ def check_valid_event(event, state, internal=False):  # return clean event
         info = find(state["edges"], x=event["x"], y=event["y"])
         assert "road" not in info
         return {"type": "build_road", "username": state["current_user"], "x": event["x"], "y": event["y"]}
+    if event["type"] == "build_settlement":
+        assert event["username"] == state["current_user"]
+        assert state["current_stage"] == "normal"
+        assert isinstance(event["x"], int)
+        assert isinstance(event["y"], int)
+        assert coord_kind(event["x"], event["y"]) == "node"
+        info = find(state["nodes"], x=event["x"], y=event["y"])
+        assert "settlement" not in info
+        return {"type": "build_settlement", "username": state["current_user"], "x": event["x"], "y": event["y"]}
     assert False, "unknown event"
 def apply_event(event, state):  # return new state
     # check player correct for player specific events
@@ -179,6 +189,11 @@ def apply_event(event, state):  # return new state
         info["road"] = True
         info["username"] = event["username"]
         return new_state
+    if event["type"] == "build_settlement":
+        info = find(new_state["nodes"], x=event["x"], y=event["y"])
+        info["settlement"] = True
+        info["username"] = event["username"]
+        return new_state
     assert False, "unknown event"
     # if event["type"] == "place_settlement":
         # x, y = event["x"], event["y"]
@@ -208,6 +223,7 @@ command_handlers = {
     "end_turn": lambda: {"type": "end_turn"},
     "logout": lambda: {"type": "logout"},
     "build_road": lambda x, y: {"type": "build_road", "x": int(x), "y": int(y)},
+    "build_settlement": lambda x, y: {"type": "build_settlement", "x": int(x), "y": int(y)},
 }
 def parse_incoming(msg: str):
     if msg.strip().startswith("{"):
