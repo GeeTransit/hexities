@@ -7,6 +7,7 @@
   </head>
 
   <body>
+    <svg id="svg"></svg>
     <form id="chat" action="javascript:void 0">
       <label for="input">message:</label>
       <input id="input"></input>
@@ -15,6 +16,18 @@
     <ul id="messages"></ul>
 
     <script>
+      function coordKind(q, r) {
+        if (q%2 === 0 && r%2 === 0)
+          if ((q-r)%6 === 0)
+              return "tile";
+          else
+              return "node";
+        else if ((q-r)%3 == 0)
+            return "edge";
+      }
+      const neighbours1 = [[0, 1], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1]];
+      const neighbours2 = [[1, 1], [2, -1], [1, -2], [-1, -1], [-2, 1], [-1, 2]];
+      const toWindowCoord = (q, r) => [Math.sqrt(3)*q, (q + 2*r)];
       const backendUrl = prompt("Server WebSocket URL");
       const defaultUrl = "/ws";
       const socket = new WebSocket(backendUrl || defaultUrl);
@@ -26,6 +39,72 @@
         var el = document.createElement("li");
         el.textContent = event.data;
         $("messages").append(el);
+        const ev = JSON.parse(event.data);
+        if (ev.type === "game_state") {
+          const state = ev.state;
+          const svg = $("svg");
+          // see https://stackoverflow.com/questions/4991098/replacing-all-children-of-an-htmlelement
+          svg.replaceChildren();
+          for (const tile of state.tiles) {
+            const { x, y } = tile;
+            const coords = [];
+            for (const [dx, dy] of neighbours1) {
+              coords.push(toWindowCoord(x + 2*dx, y + 2*dy));
+            }
+            // see https://stackoverflow.com/questions/16488884/add-svg-element-to-existing-svg-using-dom
+            const el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            el.setAttribute("points", coords.join(" "));
+            el.setAttribute("fill", "lightgray");
+            svg.appendChild(el);
+            {
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
+              const [xx, yy] = toWindowCoord(x, y);
+              el.setAttribute("x", xx);
+              el.setAttribute("y", yy);
+              el.setAttribute("fill", "black");
+              el.setAttribute("font-size", 1);
+              // see https://stackoverflow.com/questions/5546346/how-to-place-and-center-text-in-an-svg-rectangle
+              el.setAttribute("text-anchor", "middle");
+              el.setAttribute("dominant-baseline", "middle");
+              el.textContent = `${tile.resource} ${tile.number ?? ""}`.trim();
+              svg.appendChild(el);
+            }
+          }
+          for (const edge of state.edges) {
+            const { x, y } = edge;
+            const coords = [];
+            for (const [dx, dy] of neighbours1) {
+              const [nx, ny] = [x + dx, y + dy];
+              if (coordKind(nx, ny) === "node") {
+                coords.push(toWindowCoord(nx, ny));
+              }
+            }
+            const el = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            const [[x1, y1], [x2, y2]] = coords;
+            el.setAttribute("x1", x1);
+            el.setAttribute("y1", y1);
+            el.setAttribute("x2", x2);
+            el.setAttribute("y2", y2);
+            el.setAttribute("stroke", "gray");
+            el.setAttribute("stroke-width", 0.25);
+            svg.appendChild(el);
+          }
+          for (const node of state.nodes) {
+            const { x, y } = node;
+            const [cx, cy] = toWindowCoord(x, y);
+            const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            el.setAttribute("cx", cx);
+            el.setAttribute("cy", cy);
+            el.setAttribute("r", 0.5);
+            el.setAttribute("fill", "black");
+            svg.appendChild(el);
+          }
+          // see https://stackoverflow.com/questions/14362656/autosize-an-svg
+          const bbox = svg.getBBox();
+          svg.setAttribute("width", bbox.width + "rem");
+          svg.setAttribute("height", bbox.height + "rem");
+          svg.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+        }
       });
       socket.addEventListener("close", () => {
         var el = document.createElement("li");
