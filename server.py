@@ -48,11 +48,14 @@ def coord_kind(q, r):
 neighbours1 = [(0, 1), (0, -1), (-1, 0), (1, 0), (1, -1), (-1, 1)]
 neighbours2 = [(2, -1), (-2, 1), (-1, 2), (1, -2), (-1, -1), (1, 1)]
 
-def find(x, y, infos, update=False):
+def find(infos, **kwargs):
     for info in infos:
-        if info["x"] == x and info["y"] == y:
+        for key, value in kwargs.items():
+            if info[key] != value:
+                break
+        else:
             return info
-    raise LookupError(f'cannot find {x!r}, {y!r}')
+    raise LookupError(f'cannot find {kwargs!r}')
 
 def check_valid_event(event, state, internal=False):  # return clean event
     # if event needs randomized outcome, include random outcome
@@ -142,7 +145,7 @@ def check_valid_event(event, state, internal=False):  # return clean event
         assert isinstance(event["x"], int)
         assert isinstance(event["y"], int)
         assert coord_kind(event["x"], event["y"]) == "edge"
-        info = find(event["x"], event["y"], state["edges"])
+        info = find(state["edges"], x=event["x"], y=event["y"])
         assert "road" not in info
         return {"type": "build_road", "username": state["current_user"], "x": event["x"], "y": event["y"]}
     assert False, "unknown event"
@@ -172,7 +175,7 @@ def apply_event(event, state):  # return new state
         new_state["current_stage"] = "normal"
         return new_state
     if event["type"] == "build_road":
-        info = find(event["x"], event["y"], new_state["edges"], update=True)
+        info = find(new_state["edges"], x=event["x"], y=event["y"])
         info["road"] = True
         info["username"] = event["username"]
         return new_state
