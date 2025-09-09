@@ -96,6 +96,7 @@ def check_valid_event(event, state, internal=False):  # return clean event
                 for j in range(i, len(order)):
                     if resources[j] == "desert": continue
                     x, y = order[j]
+                    if (x, y) in placed: continue
                     if all(
                         placed.get((x + 2*dx, y + 2*dy)) not in (6, 8)
                         for dx, dy in neighbours2
@@ -117,6 +118,7 @@ def check_valid_event(event, state, internal=False):  # return clean event
                             break
                     else:
                         assert False
+        assert len(placed) == len(numbers)
         return {
             "type": "init",
             "tiles": [
