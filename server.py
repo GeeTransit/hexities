@@ -182,6 +182,16 @@ def apply_event(event, state):  # return new state
         return new_state
     if event["type"] == "roll":
         # distribute cards
+        number = event["dice_outcome"]["first"] + event["dice_outcome"]["second"]
+        for tile in state["tiles"]:
+            if tile.get("number") == number:
+                x, y = tile["x"], tile["y"]
+                for dx, dy in neighbours1:
+                    nx, ny = x + 2*dx, y + 2*dy
+                    node = find(state["nodes"], x=nx, y=ny)
+                    if "settlement" in node:
+                        hand_res = find(new_state["hands"], username=node["username"])["resources"]
+                        hand_res[tile["resource"]] = hand_res.get(tile["resource"], 0) + 1
         new_state["current_stage"] = "normal"
         return new_state
     if event["type"] == "build_road":
