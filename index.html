@@ -31,12 +31,12 @@
       const backendUrl = prompt("Server WebSocket URL");
       const defaultUrl = "/ws";
       const socket = new WebSocket(backendUrl || defaultUrl);
-      const $ = document.getElementById.bind(document);
+      const $ = (name) => document.getElementById(name);
       $("chat").addEventListener("submit", () => {
         socket.send($("input").value);
       });
       socket.addEventListener("message", event => {
-        var el = document.createElement("li");
+        const el = document.createElement("li");
         el.textContent = event.data;
         $("messages").append(el);
         const ev = JSON.parse(event.data);
@@ -107,7 +107,7 @@
         }
       });
       socket.addEventListener("close", () => {
-        var el = document.createElement("li");
+        const el = document.createElement("li");
         el.textContent = "error: connection closed";
         $("messages").append(el);
       });
