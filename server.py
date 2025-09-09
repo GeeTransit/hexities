@@ -41,7 +41,7 @@ def make_catan_game(event):
 def coord_kind(q, r):
     if q%2 == 0 and r%2 == 0:
         if (q-r)%6 == 0:
-            return "hex"
+            return "tile"
         else:
             return "node"
     elif (q-r)%3 == 0:
