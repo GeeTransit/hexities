@@ -210,6 +210,14 @@ def apply_event(event, state):  # return new state
         # new_state.setdefault(x, {}).setdefault(y, {})["settlement"] = 1
 def make_personalized_events(username, event):
     # useful for events which have private info like which dev card got drawn
+    if "state" in event:
+        state = copy.deepcopy(event["state"])
+        for hand in state["hands"]:
+            if hand["username"] != username:
+                total = sum(hand["resources"].values())
+                hand["resources"].clear()
+                hand["resources"]["unknown"] = total
+        event = {**event, "state": state}
     return [event]
 
 def check_valid_and_apply_event(event, state, internal=False):
