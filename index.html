@@ -67,6 +67,11 @@
               el.setAttribute("text-anchor", "middle");
               el.setAttribute("dominant-baseline", "middle");
               el.textContent = `${tile.resource} ${tile.number ?? ""}`.trim();
+              el.appendChild((() => {
+                const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                el.textContent = `${x},${y}`;
+                return el;
+              })())
               svg.appendChild(el);
             }
           }
@@ -87,6 +92,11 @@
             el.setAttribute("y2", y2);
             el.setAttribute("stroke", "gray");
             el.setAttribute("stroke-width", 0.25);
+            el.appendChild((() => {
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
+              el.textContent = `${x},${y}`;
+              return el;
+            })())
             svg.appendChild(el);
           }
           for (const node of state.nodes) {
@@ -97,6 +107,11 @@
             el.setAttribute("cy", cy);
             el.setAttribute("r", 0.5);
             el.setAttribute("fill", "black");
+            el.appendChild((() => {
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
+              el.textContent = `${x},${y}`;
+              return el;
+            })())
             svg.appendChild(el);
           }
           // see https://stackoverflow.com/questions/14362656/autosize-an-svg
