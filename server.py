@@ -172,9 +172,9 @@ def check_valid_event(event, state, internal=False):  # return clean event
         assert event["username"] == state["current_user"]
         assert state["current_stage"] == "normal"
         hand = find(state["hands"], username=state["current_user"])
-        assert hand["resources"].get("ore", 0) >= 1
-        assert hand["resources"].get("sheep", 0) >= 1
-        assert hand["resources"].get("wheat", 0) >= 1
+        assert hand["resources"]["ore"] >= 1
+        assert hand["resources"]["sheep"] >= 1
+        assert hand["resources"]["wheat"] >= 1
         assert sum(state["devcards"].values()) > 0
         devcard_kind = random.choices(list(state["devcards"].keys()), list(state["devcards"].values()), k=1)[0]
         return {
@@ -233,7 +233,7 @@ def apply_event(event, state):  # return new state
                     node = find(state["nodes"], x=nx, y=ny)
                     if "settlement" in node:
                         hand_res = find(new_state["hands"], username=node["username"])["resources"]
-                        hand_res[tile["resource"]] = hand_res.get(tile["resource"], 0) + 1
+                        hand_res[tile["resource"]] += 1
         new_state["current_stage"] = "normal"
         return new_state
     if event["type"] == "build_road":
@@ -250,23 +250,20 @@ def apply_event(event, state):  # return new state
         hand = find(new_state["hands"], username=event["username"])
         resources = hand["resources"]
         resources["ore"] -= 1
-        if resources["ore"] == 0: del resources["ore"]
         resources["sheep"] -= 1
-        if resources["sheep"] == 0: del resources["sheep"]
         resources["wheat"] -= 1
-        if resources["wheat"] == 0: del resources["wheat"]
         kind = event["devcard"]
         new_state["devcards"][kind] -= 1
-        hand["devcards"][kind] = hand["devcards"].get(kind, 0) + 1
+        hand["devcards"][kind] += 1
         return new_state
     if event["type"] == "admin_give":
         hand = find(new_state["hands"], username=event["target_user"])
         resources = hand["resources"]
         for kind, amount in event.get("resources", {}).items():
-            resources[kind] = resources.get(kind, 0) + amount
+            resources[kind] += amount
         devcards = hand["devcards"]
         for kind, amount in event.get("devcards", {}).items():
-            devcards[kind] = devcards.get(kind, 0) + amount
+            devcards[kind] += amount
         return new_state
     assert False, "unknown event"
     # if event["type"] == "place_settlement":
