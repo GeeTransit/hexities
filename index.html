@@ -46,7 +46,7 @@
           // see https://stackoverflow.com/questions/4991098/replacing-all-children-of-an-htmlelement
           svg.replaceChildren();
           for (const tile of state.tiles) {
-            const { x, y, resource } = tile;
+            const { x, y, resource, number } = tile;
             const coords = [];
             for (const [dx, dy] of neighbours1) {
               coords.push(toWindowCoord(x + 2*dx, y + 2*dy));
@@ -62,6 +62,11 @@
               wood: "mediumseagreen",
               desert: "wheat",
             }[resource] ?? "magenta");
+            el.appendChild((() => {
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
+              el.textContent = `${`${resource} ${number ?? ""}`.trim()} at ${x},${y}`;
+              return el;
+            })())
             svg.appendChild(el);
             {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -74,11 +79,6 @@
               el.setAttribute("text-anchor", "middle");
               el.setAttribute("dominant-baseline", "middle");
               el.textContent = `${tile.resource} ${tile.number ?? ""}`.trim();
-              el.appendChild((() => {
-                const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
-                el.textContent = `${x},${y}`;
-                return el;
-              })())
               svg.appendChild(el);
             }
           }
