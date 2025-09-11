@@ -69,17 +69,41 @@
             })())
             svg.appendChild(el);
             if (number != null) {
+              {
+                const [xx, yy] = toWindowCoord(x, y);
+                const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                el.setAttribute("cx", xx);
+                el.setAttribute("cy", yy);
+                el.setAttribute("r", 1.6);
+                el.setAttribute("fill", "moccasin");
+                svg.appendChild(el);
+              }
               const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
               const [xx, yy] = toWindowCoord(x, y);
+              const fill = [6, 8].includes(number) ? "crimson" : "black";
               el.setAttribute("x", xx);
               el.setAttribute("y", yy);
-              el.setAttribute("fill", "black");
+              el.setAttribute("fill", fill);
               el.setAttribute("font-size", 2);
               // see https://stackoverflow.com/questions/5546346/how-to-place-and-center-text-in-an-svg-rectangle
               el.setAttribute("text-anchor", "middle");
               el.setAttribute("dominant-baseline", "middle");
               el.textContent = number;
               svg.appendChild(el);
+              {
+                const [x1, y1] = toWindowCoord(x+1, y);
+                const [x2, y2] = toWindowCoord(x-1, y+1);
+                const [xx, yy] = [(x1+x2)/2, (y1+y2)/2];
+                const pips = 6 - Math.abs(7-number);
+                for (let i = 0; i < pips; i++) {
+                  const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                  el.setAttribute("cx", xx - 0.2*(pips-1) + 0.4*i);
+                  el.setAttribute("cy", yy);
+                  el.setAttribute("r", 0.15);
+                  el.setAttribute("fill", fill);
+                  svg.appendChild(el);
+                }
+              }
             }
           }
           for (const edge of state.edges) {
