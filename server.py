@@ -36,7 +36,11 @@ def make_catan_game(event):
         "nodes": [{"x": x, "y": y} for x, y in nodes],
         "edges": [{"x": x, "y": y} for x, y in edges],
         "tiles": [info for info in event["tiles"]],
-        "hands": [{"username": username, "resources": {}, "devcards": {}} for username in usernames],
+        "hands": [{
+            "username": username,
+            "resources": dict.fromkeys(("brick", "ore", "sheep", "wheat", "wood"), 0),
+            "devcards": dict.fromkeys(("invention", "knight", "monopoly", "road_building", "victory_point"), 0),
+        } for username in usernames],
         "devcards": {"invention": 2, "knight": 14, "monopoly": 2, "road_building": 2, "victory_point": 5}
         # settlements: {username: [[x,y],...], ...}, same with cities, roads
         # robber: [x,y],
@@ -285,6 +289,13 @@ def make_personalized_events(username, event):
                 total = sum(hand["devcards"].values())
                 hand["devcards"].clear()
                 hand["devcards"]["unknown"] = total
+            else:
+                for kind in list(hand["resources"].keys()):
+                    if hand["resources"][kind] == 0:
+                        del hand["resources"][kind]
+                for kind in list(hand["devcards"].keys()):
+                    if hand["devcards"][kind] == 0:
+                        del hand["devcards"][kind]
         event = {**event, "state": state}
     return [event]
 
