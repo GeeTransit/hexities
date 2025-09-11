@@ -36,7 +36,8 @@ def make_catan_game(event):
         "nodes": [{"x": x, "y": y} for x, y in nodes],
         "edges": [{"x": x, "y": y} for x, y in edges],
         "tiles": [info for info in event["tiles"]],
-        "hands": [{"username": username, "resources": {}} for username in usernames],
+        "hands": [{"username": username, "resources": {}, "devcards": {}} for username in usernames],
+        "devcards": {"invention": 2, "knight": 14, "monopoly": 2, "road_building": 2, "victory_point": 5}
         # settlements: {username: [[x,y],...], ...}, same with cities, roads
         # robber: [x,y],
     }
@@ -163,6 +164,20 @@ def check_valid_event(event, state, internal=False):  # return clean event
         info = find(state["nodes"], x=event["x"], y=event["y"])
         assert "settlement" not in info
         return {"type": "build_settlement", "username": state["current_user"], "x": event["x"], "y": event["y"]}
+    if event["type"] == "build_devcard":
+        assert event["username"] == state["current_user"]
+        assert state["current_stage"] == "normal"
+        hand = find(state["hands"], username=state["current_user"])
+        assert hand["resources"].get("ore", 0) >= 1
+        assert hand["resources"].get("sheep", 0) >= 1
+        assert hand["resources"].get("wheat", 0) >= 1
+        assert sum(state["devcards"].values()) > 0
+        devcard_kind = random.choices(list(state["devcards"].keys()), list(state["devcards"].values()), k=1)[0]
+        return {
+            "type": "build_devcard",
+            "username": state["current_user"],
+            "devcard": devcard_kind,
+        }
     if event["type"] == "admin_give":
         assert event["username"] == "admin"
         assert event["target_user"] in state["user_order"]
@@ -170,11 +185,16 @@ def check_valid_event(event, state, internal=False):  # return clean event
             kind in ("brick", "ore", "sheep", "wheat", "wood") and amount > 0
             for kind, amount in event.get("resources", {}).items()
         )
+        assert all(
+            kind in ("invention", "knight", "monopoly", "road_building", "victory_point") and amount > 0
+            for kind, amount in event.get("devcards", {}).items()
+        )
         return {
             "type": "admin_give",
             "username": "admin",
             "target_user": event["target_user"],
             "resources": event.get("resources", {}),
+            "devcards": event.get("devcards", {}),
         }
     assert False, "unknown event"
 def apply_event(event, state):  # return new state
@@ -222,11 +242,27 @@ def apply_event(event, state):  # return new state
         info["settlement"] = True
         info["username"] = event["username"]
         return new_state
+    if event["type"] == "build_devcard":
+        hand = find(new_state["hands"], username=event["username"])
+        resources = hand["resources"]
+        resources["ore"] -= 1
+        if resources["ore"] == 0: del resources["ore"]
+        resources["sheep"] -= 1
+        if resources["sheep"] == 0: del resources["sheep"]
+        resources["wheat"] -= 1
+        if resources["wheat"] == 0: del resources["wheat"]
+        kind = event["devcard"]
+        new_state["devcards"][kind] -= 1
+        hand["devcards"][kind] = hand["devcards"].get(kind, 0) + 1
+        return new_state
     if event["type"] == "admin_give":
         hand = find(new_state["hands"], username=event["target_user"])
         resources = hand["resources"]
         for kind, amount in event.get("resources", {}).items():
             resources[kind] = resources.get(kind, 0) + amount
+        devcards = hand["devcards"]
+        for kind, amount in event.get("devcards", {}).items():
+            devcards[kind] = devcards.get(kind, 0) + amount
         return new_state
     assert False, "unknown event"
     # if event["type"] == "place_settlement":
@@ -234,13 +270,21 @@ def apply_event(event, state):  # return new state
         # new_state.setdefault(x, {}).setdefault(y, {})["settlement"] = 1
 def make_personalized_events(username, event):
     # useful for events which have private info like which dev card got drawn
+    if event["type"] == "build_devcard" and event["username"] != username:
+        event = {**event, "devcard": "unknown"}
     if "state" in event:
         state = copy.deepcopy(event["state"])
+        total = sum(state["devcards"].values())
+        state["devcards"].clear()
+        state["devcards"]["unknown"] = total
         for hand in state["hands"]:
             if hand["username"] != username:
                 total = sum(hand["resources"].values())
                 hand["resources"].clear()
                 hand["resources"]["unknown"] = total
+                total = sum(hand["devcards"].values())
+                hand["devcards"].clear()
+                hand["devcards"]["unknown"] = total
         event = {**event, "state": state}
     return [event]
 
@@ -266,6 +310,7 @@ command_handlers = {
     "logout": lambda: {"type": "logout"},
     "build_road": lambda x, y: {"type": "build_road", "x": int(x), "y": int(y)},
     "build_settlement": lambda x, y: {"type": "build_settlement", "x": int(x), "y": int(y)},
+    "build_devcard": lambda: {"type": "build_devcard"},
 }
 def parse_incoming(msg: str):
     if msg.strip().startswith("{"):
