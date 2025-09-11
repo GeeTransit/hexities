@@ -46,7 +46,7 @@
           // see https://stackoverflow.com/questions/4991098/replacing-all-children-of-an-htmlelement
           svg.replaceChildren();
           for (const tile of state.tiles) {
-            const { x, y } = tile;
+            const { x, y, resource } = tile;
             const coords = [];
             for (const [dx, dy] of neighbours1) {
               coords.push(toWindowCoord(x + 2*dx, y + 2*dy));
@@ -54,7 +54,14 @@
             // see https://stackoverflow.com/questions/16488884/add-svg-element-to-existing-svg-using-dom
             const el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
             el.setAttribute("points", coords.join(" "));
-            el.setAttribute("fill", "lightgray");
+            el.setAttribute("fill", {
+              brick: "salmon",
+              ore: "lightgray",
+              sheep: "yellowgreen",
+              wheat: "gold",
+              wood: "mediumseagreen",
+              desert: "wheat",
+            }[resource] ?? "magenta");
             svg.appendChild(el);
             {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
