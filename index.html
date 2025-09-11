@@ -68,17 +68,17 @@
               return el;
             })())
             svg.appendChild(el);
-            {
+            if (number != null) {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
               const [xx, yy] = toWindowCoord(x, y);
               el.setAttribute("x", xx);
               el.setAttribute("y", yy);
               el.setAttribute("fill", "black");
-              el.setAttribute("font-size", 1);
+              el.setAttribute("font-size", 2);
               // see https://stackoverflow.com/questions/5546346/how-to-place-and-center-text-in-an-svg-rectangle
               el.setAttribute("text-anchor", "middle");
               el.setAttribute("dominant-baseline", "middle");
-              el.textContent = `${tile.resource} ${tile.number ?? ""}`.trim();
+              el.textContent = number;
               svg.appendChild(el);
             }
           }
