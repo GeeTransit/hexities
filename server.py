@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 import random
 
 import anyio
@@ -15,6 +16,8 @@ async def index_endpoint():
 
 # Set up a simple chat application over WebSockets
 sessions: dict[str, fastapi.WebSocket] = {}
+
+ADMIN_PASSWORD = os.environ.get("HEXITIES_ADMIN_PASSWORD")
 
 def make_catan_game(event):
     nodes = set()
@@ -160,6 +163,19 @@ def check_valid_event(event, state, internal=False):  # return clean event
         info = find(state["nodes"], x=event["x"], y=event["y"])
         assert "settlement" not in info
         return {"type": "build_settlement", "username": state["current_user"], "x": event["x"], "y": event["y"]}
+    if event["type"] == "admin_give":
+        assert event["username"] == "admin"
+        assert event["target_user"] in state["user_order"]
+        assert all(
+            kind in ("brick", "ore", "sheep", "wheat", "wood") and amount > 0
+            for kind, amount in event.get("resources", {}).items()
+        )
+        return {
+            "type": "admin_give",
+            "username": "admin",
+            "target_user": event["target_user"],
+            "resources": event.get("resources", {}),
+        }
     assert False, "unknown event"
 def apply_event(event, state):  # return new state
     # check player correct for player specific events
@@ -205,6 +221,12 @@ def apply_event(event, state):  # return new state
         info = find(new_state["nodes"], x=event["x"], y=event["y"])
         info["settlement"] = True
         info["username"] = event["username"]
+        return new_state
+    if event["type"] == "admin_give":
+        hand = find(new_state["hands"], username=event["target_user"])
+        resources = hand["resources"]
+        for kind, amount in event.get("resources", {}).items():
+            resources[kind] = resources.get(kind, 0) + amount
         return new_state
     assert False, "unknown event"
     # if event["type"] == "place_settlement":
@@ -264,6 +286,8 @@ async def handle_event(event, session, tg, ws):
             username = event["username"]
             if username in sessions:
                 raise HandlerError({"type": "login_deny", "reason": "given username in use"})
+            if username == "admin" and event.get("password") != ADMIN_PASSWORD:
+                raise HandlerError({"type": "login_deny", "reason": "incorrect password"})
             i = 0
             state = None
             while i < len(events):
