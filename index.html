@@ -8,6 +8,18 @@
 
   <body>
     <svg id="svg"></svg>
+    <form id="locations" action="javascript:void 0">
+      show locations:
+      <input id="kind-nodes" type="checkbox" name="kind" value="nodes" />
+      <label for="kind-nodes">nodes</label>
+      <input id="kind-edges" type="checkbox" name="kind" value="edges" />
+      <label for="kind-edges">edges</label>
+      <input id="kind-tiles" type="checkbox" name="kind" value="tiles" />
+      <label for="kind-tiles">tiles</label>
+    </form>
+    <p>last location:
+      <span id="location">none</span>
+    </p>
     <form id="chat" action="javascript:void 0">
       <label for="input">message:</label>
       <input id="input"></input>
@@ -43,6 +55,17 @@
         el.textContent = "info: connection opened";
         $("messages").append(el);
       });
+      const onChangeLocations = () => {
+        let kinds = [];
+        for (const input of $("locations").elements)
+          if (input.checked)
+            kinds.push(input.value);
+        for (const g of $("svg").getElementsByClassName("locations")) {
+          g.setAttribute("visibility", kinds.some(kind => g.classList.contains(kind)) ? "visible" : "hidden");
+        }
+      };
+      onChangeLocations();
+      $("locations").addEventListener("change", onChangeLocations);
       $("chat").addEventListener("submit", () => {
         socket.send($("input").value);
       });
@@ -56,8 +79,41 @@
           const svg = $("svg");
           // see https://stackoverflow.com/questions/4991098/replacing-all-children-of-an-htmlelement
           svg.replaceChildren();
+          const makeGroup = (parent, ...kinds) => {
+            const el = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            el.classList.add(...kinds);
+            parent.appendChild(el);
+            return el;
+          };
+          const tilesG = makeGroup(svg, "tiles");
+          const edgesG = makeGroup(svg, "edges");
+          const nodesG = makeGroup(svg, "nodes");
+          const tilesLocationsG = makeGroup(svg, "locations", "tiles");
+          const edgesLocationsG = makeGroup(svg, "locations", "edges");
+          const nodesLocationsG = makeGroup(svg, "locations", "nodes");
           for (const tile of state.tiles) {
             const { x, y, resource, number } = tile;
+            {
+              const [xx, yy] = toWindowCoord(x, y);
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+              el.setAttribute("cx", xx);
+              el.setAttribute("cy", yy);
+              el.setAttribute("r", 2);
+              el.setAttribute("fill-opacity", 0);
+              el.setAttribute("stroke", "black");
+              el.setAttribute("stroke-width", 0.4);
+              el.setAttribute("tabindex", 0);
+              el.addEventListener("focus", () => {
+                $("location").textContent = `${x}, ${y}`;
+              });
+              el.appendChild((() => {
+                const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                el.textContent = `${x},${y}`;
+                return el;
+              })());
+              tilesLocationsG.appendChild(el);
+            }
+            const g = makeGroup(tilesG);
             const coords = [];
             for (const [dx, dy] of neighbours1) {
               coords.push(toWindowCoord(x + 2*dx, y + 2*dy));
@@ -75,10 +131,10 @@
             }[resource] ?? "magenta");
             el.appendChild((() => {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
-              el.textContent = `${`${resource} ${number ?? ""}`.trim()} at ${x},${y}`;
+              el.textContent = `${resource} ${number ?? ""}`.trim();
               return el;
             })())
-            svg.appendChild(el);
+            g.appendChild(el);
             if (number != null) {
               {
                 const [xx, yy] = toWindowCoord(x, y);
@@ -88,7 +144,7 @@
                 el.setAttribute("r", 1.6);
                 el.setAttribute("fill", "moccasin");
                 el.setAttribute("style", "pointer-events: none");
-                svg.appendChild(el);
+                g.appendChild(el);
               }
               const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
               const [xx, yy] = toWindowCoord(x, y);
@@ -102,7 +158,7 @@
               el.setAttribute("text-anchor", "middle");
               el.setAttribute("dominant-baseline", "middle");
               el.textContent = number;
-              svg.appendChild(el);
+              g.appendChild(el);
               {
                 const [x1, y1] = toWindowCoord(x+1, y);
                 const [x2, y2] = toWindowCoord(x-1, y+1);
@@ -115,13 +171,34 @@
                   el.setAttribute("r", 0.15);
                   el.setAttribute("fill", fill);
                   el.setAttribute("style", "pointer-events: none");
-                  svg.appendChild(el);
+                  g.appendChild(el);
                 }
               }
             }
           }
           for (const edge of state.edges) {
             const { x, y } = edge;
+            {
+              const [xx, yy] = toWindowCoord(x, y);
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+              el.setAttribute("cx", xx);
+              el.setAttribute("cy", yy);
+              el.setAttribute("r", 0.7);
+              el.setAttribute("fill-opacity", 0);
+              el.setAttribute("stroke", "black");
+              el.setAttribute("stroke-width", 0.1);
+              el.setAttribute("tabindex", 0);
+              el.addEventListener("focus", () => {
+                $("location").textContent = `${x}, ${y}`;
+              });
+              el.appendChild((() => {
+                const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                el.textContent = `${x},${y}`;
+                return el;
+              })());
+              edgesLocationsG.appendChild(el);
+            }
+            const g = makeGroup(edgesG);
             const coords = [];
             for (const [dx, dy] of neighbours1) {
               const [nx, ny] = [x + dx, y + dy];
@@ -142,7 +219,7 @@
               el.textContent = `${x},${y}`;
               return el;
             })())
-            svg.appendChild(el);
+            g.appendChild(el);
           }
           for (const node of state.nodes) {
             const { x, y } = node;
@@ -150,20 +227,27 @@
             const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             el.setAttribute("cx", cx);
             el.setAttribute("cy", cy);
-            el.setAttribute("r", 0.5);
-            el.setAttribute("fill", "black");
+            el.setAttribute("r", 1);
+            el.setAttribute("fill-opacity", 0);
+            el.setAttribute("stroke", "black");
+            el.setAttribute("stroke-width", 0.2);
+            el.setAttribute("tabindex", 0);
+            el.addEventListener("focus", () => {
+              $("location").textContent = `${x}, ${y}`;
+            });
             el.appendChild((() => {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
               el.textContent = `${x},${y}`;
               return el;
             })())
-            svg.appendChild(el);
+            nodesLocationsG.appendChild(el);
           }
           // see https://stackoverflow.com/questions/14362656/autosize-an-svg
           const bbox = svg.getBBox();
-          svg.setAttribute("width", bbox.width + "rem");
-          svg.setAttribute("height", bbox.height + "rem");
-          svg.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+          svg.setAttribute("width", bbox.width + 1 + "rem");
+          svg.setAttribute("height", bbox.height + 1 + "rem");
+          svg.setAttribute("viewBox", `${bbox.x - 0.5} ${bbox.y - 0.5} ${bbox.width + 1} ${bbox.height + 1}`);
+          onChangeLocations();
         }
       });
       socket.addEventListener("close", () => {
