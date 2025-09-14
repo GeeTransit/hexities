@@ -28,10 +28,21 @@
       const neighbours1 = [[0, 1], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1]];
       const neighbours2 = [[1, 1], [2, -1], [1, -2], [-1, -1], [-2, 1], [-1, 2]];
       const toWindowCoord = (q, r) => [Math.sqrt(3)*q, (q + 2*r)];
-      const backendUrl = prompt("Server WebSocket URL");
-      const defaultUrl = "/ws";
-      const socket = new WebSocket(backendUrl || defaultUrl);
+      const backendUrl = prompt && prompt("Server WebSocket URL");
+      const defaultUrl = (
+        (location.protocol == "https:" ? "wss:" : "ws:") + "//" + location.host
+        + location.pathname.replace(/\/[^\/]*/, "/ws")
+      );
       const $ = (name) => document.getElementById(name);
+      const el = document.createElement("li");
+      el.textContent = `info: connecting to ${backendUrl || defaultUrl}`;
+      $("messages").append(el);
+      const socket = new WebSocket(backendUrl || defaultUrl);
+      socket.addEventListener("open", () => {
+        const el = document.createElement("li");
+        el.textContent = "info: connection opened";
+        $("messages").append(el);
+      });
       $("chat").addEventListener("submit", () => {
         socket.send($("input").value);
       });
