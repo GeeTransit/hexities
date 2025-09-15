@@ -39,7 +39,8 @@
       }
       const neighbours1 = [[0, 1], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1]];
       const neighbours2 = [[1, 1], [2, -1], [1, -2], [-1, -1], [-2, 1], [-1, 2]];
-      const toWindowCoord = (q, r) => [Math.sqrt(3)*q, (q + 2*r)];
+      const toWindowScale = (a) => 16*a;
+      const toWindowCoord = (q, r) => [Math.sqrt(3)*q, (q + 2*r)].map(toWindowScale);
       const backendUrl = prompt && prompt("Server WebSocket URL");
       const defaultUrl = (
         (location.protocol == "https:" ? "wss:" : "ws:") + "//" + location.host
@@ -98,10 +99,10 @@
               const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
               el.setAttribute("cx", xx);
               el.setAttribute("cy", yy);
-              el.setAttribute("r", 2);
+              el.setAttribute("r", toWindowScale(2));
               el.setAttribute("fill-opacity", 0);
               el.setAttribute("stroke", "black");
-              el.setAttribute("stroke-width", 0.4);
+              el.setAttribute("stroke-width", toWindowScale(0.4));
               el.setAttribute("tabindex", 0);
               el.addEventListener("focus", () => {
                 $("location").textContent = `${x}, ${y}`;
@@ -141,7 +142,7 @@
                 const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 el.setAttribute("cx", xx);
                 el.setAttribute("cy", yy);
-                el.setAttribute("r", 1.6);
+                el.setAttribute("r", toWindowScale(1.6));
                 el.setAttribute("fill", "moccasin");
                 el.setAttribute("style", "pointer-events: none");
                 g.appendChild(el);
@@ -153,7 +154,7 @@
               el.setAttribute("y", yy);
               el.setAttribute("fill", fill);
               el.setAttribute("style", "pointer-events: none");
-              el.setAttribute("font-size", 2);
+              el.setAttribute("font-size", toWindowScale(2));
               // see https://stackoverflow.com/questions/5546346/how-to-place-and-center-text-in-an-svg-rectangle
               el.setAttribute("text-anchor", "middle");
               el.setAttribute("dominant-baseline", "middle");
@@ -166,9 +167,9 @@
                 const pips = 6 - Math.abs(7-number);
                 for (let i = 0; i < pips; i++) {
                   const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                  el.setAttribute("cx", xx - 0.2*(pips-1) + 0.4*i);
+                  el.setAttribute("cx", xx - toWindowScale(0.2)*(pips-1) + toWindowScale(0.4)*i);
                   el.setAttribute("cy", yy);
-                  el.setAttribute("r", 0.15);
+                  el.setAttribute("r", toWindowScale(0.15));
                   el.setAttribute("fill", fill);
                   el.setAttribute("style", "pointer-events: none");
                   g.appendChild(el);
@@ -183,10 +184,10 @@
               const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
               el.setAttribute("cx", xx);
               el.setAttribute("cy", yy);
-              el.setAttribute("r", 0.7);
+              el.setAttribute("r", toWindowScale(0.7));
               el.setAttribute("fill-opacity", 0);
               el.setAttribute("stroke", "black");
-              el.setAttribute("stroke-width", 0.1);
+              el.setAttribute("stroke-width", toWindowScale(0.1));
               el.setAttribute("tabindex", 0);
               el.addEventListener("focus", () => {
                 $("location").textContent = `${x}, ${y}`;
@@ -213,7 +214,7 @@
             el.setAttribute("x2", x2);
             el.setAttribute("y2", y2);
             el.setAttribute("stroke", "gray");
-            el.setAttribute("stroke-width", 0.25);
+            el.setAttribute("stroke-width", toWindowScale(0.25));
             el.appendChild((() => {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
               el.textContent = `${x},${y}`;
@@ -227,10 +228,10 @@
             const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             el.setAttribute("cx", cx);
             el.setAttribute("cy", cy);
-            el.setAttribute("r", 1);
+            el.setAttribute("r", toWindowScale(1));
             el.setAttribute("fill-opacity", 0);
             el.setAttribute("stroke", "black");
-            el.setAttribute("stroke-width", 0.2);
+            el.setAttribute("stroke-width", toWindowScale(0.2));
             el.setAttribute("tabindex", 0);
             el.addEventListener("focus", () => {
               $("location").textContent = `${x}, ${y}`;
@@ -244,9 +245,11 @@
           }
           // see https://stackoverflow.com/questions/14362656/autosize-an-svg
           const bbox = svg.getBBox();
-          svg.setAttribute("width", bbox.width + 1 + "rem");
-          svg.setAttribute("height", bbox.height + 1 + "rem");
-          svg.setAttribute("viewBox", `${bbox.x - 0.5} ${bbox.y - 0.5} ${bbox.width + 1} ${bbox.height + 1}`);
+          const scale = 1;
+          const padding = 0.5;
+          svg.setAttribute("width", (bbox.width + toWindowScale(padding*2))*scale/toWindowScale(1) + "rem");
+          svg.setAttribute("height", (bbox.height + toWindowScale(padding*2))*scale/toWindowScale(1) + "rem");
+          svg.setAttribute("viewBox", `${bbox.x - toWindowScale(0.5)} ${bbox.y - toWindowScale(0.5)} ${bbox.width + toWindowScale(1)} ${bbox.height + toWindowScale(1)}`);
           onChangeLocations();
         }
       });
