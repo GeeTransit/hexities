@@ -61,6 +61,11 @@
         for (const input of $("locations").elements)
           if (input.checked)
             kinds.push(input.value);
+        kinds = kinds.slice(0, 1);
+        for (const input of $("locations").elements) {
+          input.checked = kinds.includes(input.value);
+          input.disabled = (!input.checked && kinds.length);
+        }
         for (const g of $("svg").getElementsByClassName("locations")) {
           g.setAttribute("visibility", kinds.some(kind => g.classList.contains(kind)) ? "visible" : "hidden");
         }
