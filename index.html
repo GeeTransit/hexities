@@ -77,6 +77,14 @@
         const ev = JSON.parse(event.data);
         if (ev.type === "game_state") {
           const state = ev.state;
+          const sortByWindowCoord = (a, b) => {
+            const [ax, ay] = toWindowCoord(a.x, a.y);
+            const [bx, by] = toWindowCoord(b.x, b.y);
+            return ay - by || ax - bx;
+          };
+          state.tiles.sort(sortByWindowCoord);
+          state.edges.sort(sortByWindowCoord);
+          state.nodes.sort(sortByWindowCoord);
           const svg = $("svg");
           // see https://stackoverflow.com/questions/4991098/replacing-all-children-of-an-htmlelement
           svg.replaceChildren();
