@@ -80,7 +80,7 @@
         el.textContent = event.data;
         $("messages").prepend(el);
         const ev = JSON.parse(event.data);
-        if (ev.type === "game_state") {
+        if (ev.state != null) {
           const state = ev.state;
           const sortByWindowCoord = (a, b) => {
             const [ax, ay] = toWindowCoord(a.x, a.y);
