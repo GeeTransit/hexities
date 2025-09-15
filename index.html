@@ -7,7 +7,14 @@
   </head>
 
   <body>
-    <svg id="svg"></svg>
+    <form id="chat" action="javascript:void 0">
+      <label for="input">message:</label>
+      <input id="input"></input>
+      <button type="submit">send</button>
+    </form>
+    <p>last location:
+      <span id="location">none</span>
+    </p>
     <form id="locations" action="javascript:void 0">
       show locations:
       <input id="kind-nodes" type="checkbox" name="kind" value="nodes" />
@@ -17,14 +24,7 @@
       <input id="kind-tiles" type="checkbox" name="kind" value="tiles" />
       <label for="kind-tiles">tiles</label>
     </form>
-    <p>last location:
-      <span id="location">none</span>
-    </p>
-    <form id="chat" action="javascript:void 0">
-      <label for="input">message:</label>
-      <input id="input"></input>
-      <button type="submit">send</button>
-    </form>
+    <svg id="svg"></svg>
     <ul id="messages"></ul>
 
     <script>
@@ -49,12 +49,12 @@
       const $ = (name) => document.getElementById(name);
       const el = document.createElement("li");
       el.textContent = `info: connecting to ${backendUrl || defaultUrl}`;
-      $("messages").append(el);
+      $("messages").prepend(el);
       const socket = new WebSocket(backendUrl || defaultUrl);
       socket.addEventListener("open", () => {
         const el = document.createElement("li");
         el.textContent = "info: connection opened";
-        $("messages").append(el);
+        $("messages").prepend(el);
       });
       const onChangeLocations = () => {
         let kinds = [];
@@ -78,7 +78,7 @@
       socket.addEventListener("message", event => {
         const el = document.createElement("li");
         el.textContent = event.data;
-        $("messages").append(el);
+        $("messages").prepend(el);
         const ev = JSON.parse(event.data);
         if (ev.type === "game_state") {
           const state = ev.state;
@@ -269,7 +269,7 @@
       socket.addEventListener("close", () => {
         const el = document.createElement("li");
         el.textContent = "error: connection closed";
-        $("messages").append(el);
+        $("messages").prepend(el);
       });
     </script>
   </body>
