@@ -315,6 +315,7 @@
             el.setAttribute("y2", y2);
             el.setAttribute("stroke", "gray");
             el.setAttribute("stroke-width", toWindowScale(0.25));
+            el.setAttribute("stroke-linecap", "round");
             el.appendChild((() => {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
               el.textContent = `${x},${y}`;
