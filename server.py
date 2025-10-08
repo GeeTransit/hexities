@@ -128,10 +128,16 @@ def check_valid_event(event, state, internal=False):  # return clean event
                     else:
                         assert False
         assert len(placed) == len(numbers)
+        deserts = [(x, y) for x, y in order if (x, y) not in placed]
+        robber = None if not deserts else random.choice(deserts)
         return {
             "type": "init",
             "tiles": [
-                {"x": x, "y": y, "resource": resource, **({"number": placed[x, y]} if (x, y) in placed else {})}
+                {"x": x, "y": y, "resource": resource, **(
+                    {"number": placed[x, y]} if (x, y) in placed else
+                    {"robber": True} if (x, y) == robber else
+                    {}
+                )}
                 for (x, y), resource in zip(order, resources)
             ]
             # "ports": [{"y":y,"x":x,"type":"lumber/any"}]
@@ -182,6 +188,38 @@ def check_valid_event(event, state, internal=False):  # return clean event
             "type": "build_devcard",
             "username": state["current_user"],
             "devcard": devcard_kind,
+        }
+    if event["type"] == "activate_robber":
+        assert event["username"] == state["current_user"]
+        assert state["current_stage"] == "normal"
+        x, y = event["x"], event["y"]
+        assert isinstance(x, int)
+        assert isinstance(y, int)
+        assert coord_kind(x, y) == "tile"
+        tile = find(state["tiles"], x=x, y=y)
+        assert "robber" not in tile
+        target_user = event.get("target_user")
+        if target_user is None:
+            for dx, dy in neighbours1:
+                other_node = find(state["nodes"], x=x+2*dx, y=y+2*dy)
+                if "settlement" in other_node and other_node["username"] != state["current_user"]:
+                    assert target_user is None
+                    target_user = other_node["username"]
+        resource_kind = None
+        if target_user is not None:
+            assert target_user in state["user_order"]
+            assert target_user != state["current_user"]
+            # pick random item to rob
+            hand = find(state["hands"], username=target_user)
+            if sum(hand["resources"].values()) > 0:
+                resource_kind = random.choices(list(hand["resources"].keys()), list(hand["resources"].values()), k=1)[0]
+        return {
+            "type": "activate_robber",
+            "username": state["current_user"],
+            "target_user": target_user,
+            "x": x,
+            "y": y,
+            "resource": resource_kind,
         }
     if event["type"] == "admin_give":
         assert event["username"] == "admin"
@@ -256,6 +294,23 @@ def apply_event(event, state):  # return new state
         kind = event["devcard"]
         new_state["devcards"][kind] -= 1
         hand["devcards"][kind] += 1
+        return new_state
+    if event["type"] == "activate_robber":
+        try:
+            for tile in new_state["tiles"]:
+                tile.pop("robber", None)
+        except LookupError:
+            pass
+        tile = find(new_state["tiles"], x=event["x"], y=event["y"])
+        tile["robber"] = True
+        if event["target_user"] is not None:
+            my_hand = find(new_state["hands"], username=event["username"])
+            my_resources = my_hand["resources"]
+            other_hand = find(new_state["hands"], username=event["target_user"])
+            other_resources = other_hand["resources"]
+            if event["resource"] is not None:
+                other_resources[event["resource"]] -= 1
+                my_resources[event["resource"]] += 1
         return new_state
     if event["type"] == "admin_give":
         hand = find(new_state["hands"], username=event["target_user"])
@@ -336,6 +391,7 @@ async def send(ws, event):
 command_handlers = {
     "login": lambda username: {"type": "login", "username": username},
     "roll": lambda: {"type": "roll"},
+    "activate_robber": lambda x, y, target_user=None: {"type": "activate_robber", "x": int(x), "y": int(y), "target_user": target_user},
     "end_turn": lambda: {"type": "end_turn"},
     "logout": lambda: {"type": "logout"},
     "build_road": lambda x, y: {"type": "build_road", "x": int(x), "y": int(y)},

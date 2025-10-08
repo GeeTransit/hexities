@@ -130,7 +130,7 @@
           const edgesLocationsG = makeGroup(svg, "locations", "edges");
           const nodesLocationsG = makeGroup(svg, "locations", "nodes");
           for (const tile of state.tiles) {
-            const { x, y, resource, number } = tile;
+            const { x, y, resource, number, robber } = tile;
             {
               const [xx, yy] = toWindowCoord(x, y);
               const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -224,6 +224,20 @@
                   el.setAttribute("style", "pointer-events: none");
                   g.appendChild(el);
                 }
+              }
+            }
+            if (robber != null) {
+              {
+                const [xx, yy] = toWindowCoord(x, y);
+                const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                el.setAttribute("cx", xx-toWindowScale(1.75));
+                el.setAttribute("cy", yy+toWindowScale(1));
+                el.setAttribute("r", toWindowScale(0.75));
+                el.setAttribute("fill", "gray");
+                el.setAttribute("stroke", "black");
+                el.setAttribute("stroke-width", toWindowScale(0.1));
+                el.setAttribute("style", "pointer-events: none");
+                g.appendChild(el);
               }
             }
           }
