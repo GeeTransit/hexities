@@ -273,7 +273,18 @@
             g.appendChild(el);
           }
           for (const node of state.nodes) {
-            const { x, y } = node;
+            const { x, y, settlement, username } = node;
+            const g = makeGroup(nodesG);
+            if (settlement) {
+              const [xx, yy] = toWindowCoord(x, y);
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+              el.setAttribute("points", [[0,-0.8], [0.6,-0.3], [0.6,0.4], [-0.6,0.4], [-0.6,-0.3]].map(([dx, dy]) => [xx+toWindowScale(dx), yy+toWindowScale(dy)]).join(" "));
+              const i = state.user_order.findIndex(name => name == username)
+              el.setAttribute("fill", ["dodgerblue", "crimson", "orange", "white"][i] ?? "magenta");
+              el.setAttribute("stroke", "black");
+              el.setAttribute("stroke-width", toWindowScale(0.1));
+              g.appendChild(el);
+            }
             const [cx, cy] = toWindowCoord(x, y);
             const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             el.setAttribute("cx", cx);
