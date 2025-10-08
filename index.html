@@ -12,6 +12,11 @@
       <input id="input"></input>
       <button type="submit">send</button>
     </form>
+    <form id="players" action="javascript:void 0">
+      players:
+    </form>
+    <ul id="playersinfo">
+    </ul>
     <p>last location:
       <span id="location">none</span>
     </p>
@@ -84,6 +89,23 @@
         const ev = JSON.parse(event.data);
         if (ev.state != null) {
           const state = ev.state;
+          const EL = (name, f) => { const el = document.createElement(name); f(el); return el; };
+          const el = document.createElement("input")
+          const players = [];
+          const playersinfo = [];
+          for (let i = 0; i < state.user_order.length; i++) {
+            const player = state.user_order[i];
+            players.push(
+              EL("input", el => { el.id="player-"+(i+1); el.type="checkbox"; el.name="kind"; el.value=player; }),
+              EL("label", el => { el.setAttribute("for", "player-"+(i+1)); el.textContent=player; }),
+            );
+            const hand = state.hands.find(hand => hand.username == player);
+            playersinfo.push(
+              EL("li", el => { el.textContent=player+": "+JSON.stringify(hand.resources)+", "+JSON.stringify(hand.devcards); }),
+            );
+          }
+          $("players").replaceChildren("players:", ...players);
+          $("playersinfo").replaceChildren(...playersinfo);
           const sortByWindowCoord = (fY) => (a, b) => {
             const [ax, ay] = toWindowCoord(a.x, a.y);
             const [bx, by] = toWindowCoord(b.x, b.y);
