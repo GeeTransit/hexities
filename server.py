@@ -18,6 +18,7 @@ async def index_endpoint():
 sessions: dict[str, fastapi.WebSocket] = {}
 
 ADMIN_PASSWORD = os.environ.get("HEXITIES_ADMIN_PASSWORD")
+GAME_PATH = os.environ.get("HEXITIES_GAME_PATH", "game.jsonl")
 
 def make_catan_game(event):
     nodes = set()
@@ -305,7 +306,28 @@ def check_valid_and_apply_event(event, state, internal=False):
 # get event, check valid, apply event, broadcast event/game state
 # for now theres only one game (stored in a local file)
 # and player names hardcoded
-events = [check_valid_and_apply_event({"type": "init"}, {}, internal=True)]  # list of {"type": event_type, ..., "state": ...}
+def load_game_from_file(game_path):
+    with open(game_path) as file:
+        events = []
+        for line in file:
+            events.append(json.loads(line))
+        if not events:
+            events.append({"type": "init"})
+        state = {}
+        for i, event in enumerate(events):
+            state = events[i]["state"] = apply_event(event, state)
+        return events
+def append_event(game_path, event):
+    event = event.copy()
+    event.pop("state", None)
+    with open(game_path, mode="a") as file:
+        file.write(json.dumps(event, separators=",:"))
+        file.write("\n")
+try:
+    events = load_game_from_file(GAME_PATH)
+except FileNotFoundError:
+    events = [check_valid_and_apply_event({"type": "init"}, {}, internal=True)]
+    append_event(GAME_PATH, events[-1])
 events_updated = anyio.Condition()
 
 async def send(ws, event):
@@ -380,6 +402,7 @@ async def handle_event(event, session, tg, ws):
             raise RuntimeError("username must match own username")
         new_event = check_valid_and_apply_event(event, events[-1]["state"])
         events.append(new_event)
+        append_event(GAME_PATH, new_event)
         async with events_updated:
             events_updated.notify_all()
         return
