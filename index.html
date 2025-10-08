@@ -22,6 +22,7 @@
       <button type="submit" name="build_settlement" value="">build settlement</button>
       <button type="submit" name="build_devcard" value="">build development card</button>
       <button type="submit" name="activate_robber" value="">activate robber</button>
+      <button type="submit" name="discard_resources" value="">discard resources</button>
     </form>
     </p>
     <form id="players" action="javascript:void 0">
@@ -29,6 +30,11 @@
     </form>
     <ul id="playersinfo">
     </ul>
+    <p>
+    <form id="handresources" action="javascript:void 0">
+      hand:
+    </form>
+    </p>
     <p>last location:
       <span id="location">none</span>
     </p>
@@ -114,6 +120,11 @@
             socket.send(JSON.stringify({type:name, x:+x, y:+y, target_user:player}));
             break;
           }
+          case "discard_resources": {
+            const resources = [...$("handresources").querySelectorAll("input")].filter(el => +el.value).flatMap(el => Array(+el.value).fill(el.name));
+            socket.send(JSON.stringify({type:name, resources:resources}));
+            break;
+          }
           default:
             socket.send(JSON.stringify({type:event.submitter.name}));
         }
@@ -142,6 +153,12 @@
           }
           $("players").replaceChildren("players:", ...players);
           $("playersinfo").replaceChildren(...playersinfo);
+          $("handresources").replaceChildren("hand:", EL("ul", el => el.append(...Object
+            .entries(state.hands.find(hand => hand.resources.unknown == null).resources)
+            .map(([kind, amount]) => EL("li", el => el.append(
+              EL("label", el => { el.setAttribute("for", "resource-"+kind); el.textContent=amount+" "+kind; }),
+              EL("input", el => { el.id="resource-"+kind; el.type="number"; el.name=kind; el.min=0; el.max=amount; }),
+            ))))));
           const sortByWindowCoord = (fY) => (a, b) => {
             const [ax, ay] = toWindowCoord(a.x, a.y);
             const [bx, by] = toWindowCoord(b.x, b.y);

@@ -221,6 +221,22 @@ def check_valid_event(event, state, internal=False):  # return clean event
             "y": y,
             "resource": resource_kind,
         }
+    if event["type"] == "discard_resources":
+        # TODO: update to only accept when user needs to discard resources
+        assert event["username"] == state["current_user"]
+        assert state["current_stage"] == "normal"
+        hand = find(state["hands"], username=event["username"])
+        assert sum(hand["resources"].values()) >= 7
+        assert len(event["resources"]) == sum(hand["resources"].values()) // 2
+        assert all(
+            event["resources"].count(resource_kind) <= hand["resources"][resource_kind]
+            for resource_kind in event["resources"]
+        )
+        return {
+            "type": "discard_resources",
+            "username": event["username"],
+            "resources": event["resources"],
+        }
     if event["type"] == "admin_give":
         assert event["username"] == "admin"
         assert event["target_user"] in state["user_order"]
@@ -312,6 +328,12 @@ def apply_event(event, state):  # return new state
                 other_resources[event["resource"]] -= 1
                 my_resources[event["resource"]] += 1
         return new_state
+    if event["type"] == "discard_resources":
+        # TODO: update whether players need to discard anymore
+        hand = find(new_state["hands"], username=event["username"])
+        for resource_kind in event["resources"]:
+            hand["resources"][resource_kind] -= 1
+        return new_state
     if event["type"] == "admin_give":
         hand = find(new_state["hands"], username=event["target_user"])
         resources = hand["resources"]
@@ -391,6 +413,7 @@ async def send(ws, event):
 command_handlers = {
     "login": lambda username: {"type": "login", "username": username},
     "roll": lambda: {"type": "roll"},
+    "discard_resources": lambda *resources: {"type": "discard_resources", "resources": resources},
     "activate_robber": lambda x, y, target_user=None: {"type": "activate_robber", "x": int(x), "y": int(y), "target_user": target_user},
     "end_turn": lambda: {"type": "end_turn"},
     "logout": lambda: {"type": "logout"},
