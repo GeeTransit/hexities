@@ -84,14 +84,14 @@
         const ev = JSON.parse(event.data);
         if (ev.state != null) {
           const state = ev.state;
-          const sortByWindowCoord = (a, b) => {
+          const sortByWindowCoord = (fY) => (a, b) => {
             const [ax, ay] = toWindowCoord(a.x, a.y);
             const [bx, by] = toWindowCoord(b.x, b.y);
-            return ay - by || ax - bx;
+            return fY(ay) - fY(by) || ax - bx;
           };
-          state.tiles.sort(sortByWindowCoord);
-          state.edges.sort(sortByWindowCoord);
-          state.nodes.sort(sortByWindowCoord);
+          state.tiles.sort(sortByWindowCoord(y => y));
+          state.edges.sort(sortByWindowCoord(y => y));
+          state.nodes.sort(sortByWindowCoord(y => Math.floor(y/toWindowScale(6))));
           const svg = $("svg");
           // see https://stackoverflow.com/questions/4991098/replacing-all-children-of-an-htmlelement
           svg.replaceChildren();
