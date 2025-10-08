@@ -173,6 +173,19 @@
               return el;
             })())
             g.appendChild(el);
+            {
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
+              const [xx, yy] = toWindowCoord(x, y);
+              el.setAttribute("x", xx);
+              el.setAttribute("y", yy-toWindowScale(2));
+              el.setAttribute("fill", "black");
+              el.setAttribute("style", "pointer-events: none");
+              el.setAttribute("font-size", toWindowScale(1));
+              el.setAttribute("text-anchor", "middle");
+              el.setAttribute("dominant-baseline", "middle");
+              el.textContent = resource;
+              g.appendChild(el);
+            }
             if (number != null) {
               {
                 const [xx, yy] = toWindowCoord(x, y);
