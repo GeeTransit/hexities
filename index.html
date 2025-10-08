@@ -12,6 +12,18 @@
       <input id="input"></input>
       <button type="submit">send</button>
     </form>
+    <p>
+    <form id="action" action="javascript:void 0">
+      <button type="submit" name="login" value="">login with username</button>
+      <button type="submit" name="end_turn" value="">end turn</button>
+      <button type="submit" name="roll" value="">roll</button>
+      <button type="submit" name="logout" value="">logout</button>
+      <button type="submit" name="build_road" value="">build road</button>
+      <button type="submit" name="build_settlement" value="">build settlement</button>
+      <button type="submit" name="build_devcard" value="">build development card</button>
+      <button type="submit" name="activate_robber" value="">activate robber</button>
+    </form>
+    </p>
     <form id="players" action="javascript:void 0">
       players:
     </form>
@@ -81,6 +93,30 @@
       $("locations").addEventListener("change", onChangeLocations);
       $("chat").addEventListener("submit", () => {
         socket.send($("input").value);
+      });
+      $("action").addEventListener("submit", event => {
+        const name = event.submitter.name;
+        switch (name) {
+          case "login": {
+            socket.send(JSON.stringify({type:name, username:$("input").value}));
+            break;
+          }
+          case "build_road":
+          case "build_settlement":
+          case "build_city": {
+            const [x, y] = $("location").textContent.split(",");
+            socket.send(JSON.stringify({type:name, x:+x, y:+y}));
+            break;
+          }
+          case "activate_robber": {
+            const [x, y] = $("location").textContent.split(",");
+            const [player] = [...$("players").querySelectorAll("input")].filter(el => el.checked).map(el => el.value);
+            socket.send(JSON.stringify({type:name, x:+x, y:+y, target_user:player}));
+            break;
+          }
+          default:
+            socket.send(JSON.stringify({type:event.submitter.name}));
+        }
       });
       socket.addEventListener("message", event => {
         const el = document.createElement("li");
