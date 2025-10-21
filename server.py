@@ -281,7 +281,7 @@ def apply_event(event, state):  # return new state
         # distribute cards
         number = event["dice_outcome"]["first"] + event["dice_outcome"]["second"]
         for tile in state["tiles"]:
-            if tile.get("number") == number:
+            if tile.get("number") == number and "robber" not in tile:
                 x, y = tile["x"], tile["y"]
                 for dx, dy in neighbours1:
                     nx, ny = x + 2*dx, y + 2*dy
