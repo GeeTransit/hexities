@@ -20,9 +20,20 @@
       <button type="submit" name="logout" value="">logout</button>
       <button type="submit" name="build_road" value="">build road</button>
       <button type="submit" name="build_settlement" value="">build settlement</button>
+      <button type="submit" name="build_city" value="">build city</button>
       <button type="submit" name="build_devcard" value="">build development card</button>
       <button type="submit" name="activate_robber" value="">activate robber</button>
       <button type="submit" name="discard_resources" value="">discard resources</button>
+<!-- "trade_bank": lambda give, take: {"type": "trade_bank", "give": give, "take": take}, -->
+<!-- "play_devcard": lambda devcard, *args: { -->
+    <!-- "invention": lambda resource1, resource2: -->
+        <!-- {"type": "play_devcard", "devcard": "invention", "resources": [resource1, resource2]}, -->
+    <!-- "monopoly": lambda resource: -->
+        <!-- {"type": "play_devcard", "devcard": "monopoly", "resource": resource}, -->
+    <!-- "road_building": lambda x1, y1, x2, y2: -->
+        <!-- {"type": "play_devcard", "devcard": "road_building", "roads": [{"x": int(x1), "y": int(y1)}, {"x": int(x2), "y": int(y2)}]}, -->
+    <!-- "knight": lambda: -->
+        <!-- {"type": "play_devcard", "devcard": "knight"}, -->
     </form>
     </p>
     <form id="players" action="javascript:void 0">
@@ -90,6 +101,7 @@
         kinds = kinds.slice(0, 1);
         for (const input of $("locations").elements) {
           input.checked = kinds.includes(input.value);
+          // input.disabled = (!input.checked && kinds.length);
         }
         for (const g of $("svg").getElementsByClassName("locations")) {
           g.setAttribute("visibility", kinds.some(kind => g.classList.contains(kind)) ? "visible" : "hidden");
@@ -143,7 +155,9 @@
           for (let i = 0; i < state.user_order.length; i++) {
             const player = state.user_order[i];
             players.push(
+              //<input id="player-1" type="checkbox" name="kind" value="alice" />
               EL("input", el => { el.id="player-"+(i+1); el.type="checkbox"; el.name="kind"; el.value=player; }),
+              //<label for="player-1">alice</label>
               EL("label", el => { el.setAttribute("for", "player-"+(i+1)); el.textContent=player; }),
             );
             const hand = state.hands.find(hand => hand.username == player);
@@ -224,7 +238,7 @@
               const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
               el.textContent = `${resource} ${number ?? ""}`.trim();
               return el;
-            })())
+            })());
             g.appendChild(el);
             {
               const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -295,7 +309,7 @@
             }
           }
           for (const edge of state.edges) {
-            const { x, y } = edge;
+            const { x, y, road, username } = edge;
             {
               const [xx, yy] = toWindowCoord(x, y);
               const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -337,8 +351,20 @@
               const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
               el.textContent = `${x},${y}`;
               return el;
-            })())
+            })());
             g.appendChild(el);
+            if (road) {
+              const [xx, yy] = toWindowCoord(x, y);
+              const el = document.createElementNS("http://www.w3.org/2000/svg", "line");
+              el.setAttribute("x1", xx*0.5 + x1*0.5);
+              el.setAttribute("y1", yy*0.5 + y1*0.5);
+              el.setAttribute("x2", xx*0.5 + x2*0.5);
+              el.setAttribute("y2", yy*0.5 + y2*0.5);
+              const i = state.user_order.findIndex(name => name == username)
+              el.setAttribute("stroke", ["dodgerblue", "crimson", "orange", "white"][i] ?? "magenta");
+              el.setAttribute("stroke-width", toWindowScale(0.7));
+              g.appendChild(el);
+            }
           }
           for (const node of state.nodes) {
             const { x, y, settlement, username } = node;
@@ -346,7 +372,8 @@
             if (settlement) {
               const [xx, yy] = toWindowCoord(x, y);
               const el = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-              el.setAttribute("points", [[0,-0.8], [0.6,-0.3], [0.6,0.4], [-0.6,0.4], [-0.6,-0.3]].map(([dx, dy]) => [xx+toWindowScale(dx), yy+toWindowScale(dy)]).join(" "));
+              el.setAttribute("points", [[0,-0.7], [0.6,-0.2], [0.6,0.5], [-0.6,0.5], [-0.6,-0.2]].map(([dx, dy]) => [xx+toWindowScale(dx), yy+toWindowScale(dy)]).join(" "));
+              // el.setAttribute("fill", "lightskyblue");
               const i = state.user_order.findIndex(name => name == username)
               el.setAttribute("fill", ["dodgerblue", "crimson", "orange", "white"][i] ?? "magenta");
               el.setAttribute("stroke", "black");
@@ -369,7 +396,7 @@
               const el = document.createElementNS("http://www.w3.org/2000/svg", "title");
               el.textContent = `${x},${y}`;
               return el;
-            })())
+            })());
             nodesLocationsG.appendChild(el);
           }
           // see https://stackoverflow.com/questions/14362656/autosize-an-svg

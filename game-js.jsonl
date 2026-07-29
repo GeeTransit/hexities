@@ -1,0 +1,6 @@
+{"type":"init","tiles":[{"x":0,"y":0,"number":8,"resource":"sheep"},{"x":4,"y":-2,"number":3,"resource":"wood"},{"x":-4,"y":2,"number":9,"resource":"wood"},{"x":-2,"y":4,"number":9,"resource":"wheat"},{"x":2,"y":-4,"number":5,"resource":"ore"},{"x":-2,"y":-2,"number":5,"resource":"brick"},{"x":2,"y":2,"number":11,"resource":"wheat"},{"x":8,"y":-4,"number":3,"resource":"brick"},{"x":6,"y":-6,"number":11,"resource":"sheep"},{"x":6,"y":0,"number":6,"resource":"brick"},{"x":-8,"y":4,"number":4,"resource":"sheep"},{"x":-6,"y":6,"number":6,"resource":"wood"},{"x":-6,"y":0,"number":8,"resource":"ore"},{"x":-4,"y":8,"number":2,"resource":"ore"},{"x":0,"y":6,"number":10,"resource":"wheat"},{"x":4,"y":-8,"number":12,"resource":"sheep"},{"x":0,"y":-6,"resource":"desert","robber":true},{"x":-4,"y":-4,"number":10,"resource":"wheat"},{"x":4,"y":4,"number":4,"resource":"wood"}]}
+{"type":"admin_give","target_user":"alice","resources":{"brick":99,"ore":99,"sheep":99,"wheat":99,"wood":99},"username":"alice"}
+{"type":"build_settlement","x":0,"y":-2,"username":"alice"}
+{"type":"build_road","x":0,"y":-3,"username":"alice"}
+{"type":"build_settlement","x":2,"y":-6,"username":"bob"}
+{"type":"build_road","x":1,"y":-5,"username":"bob"}
